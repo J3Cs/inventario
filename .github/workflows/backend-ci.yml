@@ -1,0 +1,52 @@
+name: Backend CI - Spring Boot
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Servicio de base de datos MySQL efímero para ejecutar las pruebas
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: inventario_db
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Configuración de JDK 25
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    # Ejecución de pruebas integrando MySQL
+    - name: Build and Test with Maven
+      env:
+        SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/inventario_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: ""
+      run: ./mvnw clean test
+
+    - name: Package Application
+      run: ./mvnw package -DskipTests
