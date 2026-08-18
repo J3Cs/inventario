@@ -1,0 +1,36 @@
+name: Backend CI - Spring Boot
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Obtener el código del repositorio
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Configurar el entorno de Java (JDK 17 o la versión que uses)
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven # Optimiza tiempos de ejecución guardando el caché de dependencias
+
+    # 3. Dar permisos de ejecución al wrapper de Maven
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    # 4. Compilar y ejecutar pruebas unitarias/integración
+    - name: Build and Test with Maven
+      run: ./mvnw clean test
+
+    # 5. Generar el paquete (JAR) omitiendo tests (ya ejecutados en el paso previo)
+    - name: Package Application
+      run: ./mvnw package -DskipTests
